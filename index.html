@@ -1,4 +1,4 @@
-
+<!-- 
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -94,4 +94,222 @@
 
 </body>
 </html>
-```
+``` -->
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Katalog Undangan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+    
+    /* CSS Khusus Slider / Gallery */
+    .slider-container { overflow: hidden; position: relative; width: 100%; aspect-ratio: 4/4; border-radius: 0.5rem; background: #f1f5f9; touch-action: pan-y; }
+    .slider-wrapper { display: flex; width: 100%; height: 100%; transition: transform 0.3s ease-out; cursor: grab; }
+    .slider-wrapper:active { cursor: grabbing; }
+    .slider-slide { flex: 0 0 100%; width: 100%; height: 100%; position: relative; user-select: none; }
+    .slider-slide img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+    
+    /* Navigasi Arrow & Dots */
+    .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.7); color: #333; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; opacity: 0; transition: opacity 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    .slider-container:hover .slider-btn { opacity: 1; }
+    .slider-btn.prev { left: 8px; }
+    .slider-btn.next { right: 8px; }
+    
+    .slider-dots { position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; z-index: 10; }
+    .slider-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+    .slider-dot.active { background: white; transform: scale(1.2); }
+
+    /* Hide scrollbar for categories */
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Loading Spinner */
+    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #4c1d95; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="text-gray-800 antialiased pb-20">
+
+  <header class="bg-white shadow-sm sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <h1 class="text-xl font-bold text-violet-900" id="brand-name">Katalog Undangan</h1>
+      </div>
+      <div class="relative w-1/2 max-w-xs hidden sm:block">
+        <input type="text" id="searchInput" placeholder="Cari undangan..." class="w-full pl-10 pr-4 py-2 bg-gray-100 border-none rounded-full text-sm focus:ring-2 focus:ring-violet-500 outline-none transition-all">
+        <i class="fas fa-search absolute left-4 top-2.5 text-gray-400"></i>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-6xl mx-auto px-4 py-3 sm:hidden relative">
+    <input type="text" id="searchInputMobile" placeholder="Cari undangan..." class="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-full text-sm shadow-sm focus:ring-2 focus:ring-violet-500 outline-none">
+    <i class="fas fa-search absolute left-7 top-5 text-gray-400"></i>
+  </div>
+
+  <!-- Kategori Filter -->
+  <div class="max-w-6xl mx-auto px-4 mb-6">
+    <div class="flex gap-2 overflow-x-auto py-2 hide-scrollbar" id="category-container">
+      <button class="cat-btn active px-4 py-2 bg-violet-600 text-white rounded-full text-sm font-medium whitespace-nowrap transition-colors" data-cat="all">Semua Produk</button>
+      <!-- Kategori akan dirender di sini -->
+    </div>
+  </div>
+
+  <main class="max-w-6xl mx-auto px-4 min-h-[50vh]">
+    <div id="loading-state" class="flex flex-col items-center justify-center py-20">
+      <div class="loader mb-4"></div>
+      <p class="text-gray-500">Memuat katalog...</p>
+    </div>
+
+    <div id="empty-state" class="hidden flex-col items-center justify-center py-20 text-center">
+      <i class="fas fa-box-open text-5xl text-gray-300 mb-4"></i>
+      <h3 class="text-lg font-semibold text-gray-700">Tidak ada produk ditemukan</h3>
+      <p class="text-gray-500">Coba ubah kata kunci atau filter kategori.</p>
+    </div>
+
+    <div id="product-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 hidden">
+      <!-- Produk akan dirender di sini -->
+    </div>
+  </main>
+
+  <div id="detail-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex-col items-center justify-center backdrop-blur-sm p-4 sm:p-8 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-2xl w-full max-w-4xl max-h-full overflow-hidden flex flex-col md:flex-row shadow-2xl relative transform scale-95 transition-transform duration-300" id="detail-modal-content">
+      
+      <button onclick="closeDetail()" class="absolute top-3 right-3 w-8 h-8 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-full flex items-center justify-center z-20 transition-colors">
+        <i class="fas fa-times"></i>
+      </button>
+
+      <!-- Bagian Gallery Besar di Modal -->
+      <div class="w-full md:w-1/2 bg-gray-100 relative" id="modal-gallery-area">
+        <!-- Akan diisi oleh JS -->
+      </div>
+
+      <!-- Bagian Info Produk -->
+      <div class="w-full md:w-1/2 p-6 overflow-y-auto max-h-[50vh] md:max-h-full flex flex-col">
+        <div class="text-xs font-semibold text-violet-600 mb-2 uppercase tracking-wide" id="modal-kategori">Kategori</div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-1" id="modal-title">Nama Produk</h2>
+        <div class="text-sm text-gray-500 mb-4 font-mono" id="modal-kode">KODE</div>
+        
+        <div class="flex items-baseline gap-2 mb-6">
+          <span class="text-2xl font-bold text-gray-900" id="modal-harga">Rp0</span>
+          <span class="text-sm text-gray-400 line-through hidden" id="modal-harga-coret">Rp0</span>
+        </div>
+
+        <div class="prose prose-sm text-gray-600 mb-6 flex-grow" id="modal-desc">
+          Deskripsi produk...
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 text-sm mb-8 bg-gray-50 p-4 rounded-xl border border-gray-100">
+          <div><span class="text-gray-500 block text-xs">Min. Order</span><span class="font-medium" id="modal-min">100 pcs</span></div>
+          <div><span class="text-gray-500 block text-xs">Bahan</span><span class="font-medium" id="modal-bahan">Jasmine</span></div>
+          <div><span class="text-gray-500 block text-xs">Ukuran</span><span class="font-medium" id="modal-ukuran">15x20 cm</span></div>
+          <div><span class="text-gray-500 block text-xs">Finishing</span><span class="font-medium" id="modal-finishing">-</span></div>
+        </div>
+
+        <button onclick="openCheckout()" class="w-full py-3.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-500/30">
+          <i class="fab fa-whatsapp text-lg"></i> Pesan via WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="lightbox" class="fixed inset-0 bg-black z-[60] hidden flex-col opacity-0 transition-opacity duration-300">
+    <div class="absolute top-4 right-4 flex gap-4 z-20">
+      <button onclick="closeLightbox()" class="text-white hover:text-gray-300 text-2xl w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="w-full h-full flex items-center justify-center relative" id="lightbox-container">
+      <!-- Image slider injected via JS -->
+    </div>
+  </div>
+
+  <script>
+    // --- KONFIGURASI API BACKEND ---
+    // Ganti URL di bawah ini dengan URL Deployment Apps Script Anda yang berakhiran /exec
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvckAsQeadIE_S466n_3ndyj7v_zThK0ij3uzRZkydbCWZ8AUtXYfK7a4--GzmmTP7/exec';
+
+    // --- STATE MANAGER ---
+    let appData = {
+      settings: {},
+      categories: [],
+      products: []
+    };
+    let currentFilter = 'all';
+    let currentSearch = '';
+    let activeProduct = null;
+
+    // Format Rupiah
+    const formatRp = (angka) => {
+      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka);
+    };
+
+    // --- INISIALISASI ---
+    document.addEventListener("DOMContentLoaded", () => {
+      // Mengambil data menggunakan Fetch API (Menggantikan google.script.run)
+      fetch(SCRIPT_URL + '?action=getData')
+        .then(response => response.json())
+        .then(result => {
+          if (result.status === 'success') {
+            onDataLoaded(result.data);
+          } else {
+            console.error("Error dari server:", result.message);
+            alert("Terjadi kesalahan sistem saat memuat data.");
+            document.getElementById('loading-state').innerHTML = '<p class="text-red-500">Gagal memuat katalog.</p>';
+          }
+        })
+        .catch(error => {
+          console.error("Error Fetch API:", error);
+          alert("Gagal terhubung ke database. Periksa koneksi internet Anda.");
+          document.getElementById('loading-state').innerHTML = '<p class="text-red-500">Error jaringan.</p>';
+        });
+
+      // Setup Search Listeners
+      document.getElementById('searchInput').addEventListener('input', (e) => handleSearch(e.target.value));
+      document.getElementById('searchInputMobile').addEventListener('input', (e) => handleSearch(e.target.value));
+      
+      // ESC key to close modals
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (!document.getElementById('lightbox').classList.contains('hidden')) closeLightbox();
+          else if (!document.getElementById('detail-modal').classList.contains('hidden')) closeDetail();
+        }
+      });
+    });
+
+    // --- RENDER DATA AWAL ---
+    function onDataLoaded(data) {
+      appData = data;
+      
+      // Update Settings UI
+      if(appData.settings.Nama_Usaha) {
+        document.getElementById('brand-name').textContent = appData.settings.Nama_Usaha;
+        document.title = appData.settings.Nama_Usaha + " - Katalog";
+      }
+
+      // Render Kategori
+      const catContainer = document.getElementById('category-container');
+      appData.categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = "cat-btn px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-full text-sm font-medium whitespace-nowrap hover:bg-gray-50 transition-colors";
+        btn.setAttribute('data-cat', cat.Nama_Kategori);
+        btn.innerHTML = `${cat.Icon || ''} ${cat.Nama_Kategori}`.trim(); btn.onclick = () => filterCategory(cat.Nama_Kategori, btn); catContainer.appendChild(btn); });  // Filter tombol "Semua" document.querySelector('.cat-btn[data-cat="all"]').onclick = function() { filterCategory('all', this); };  // Render Produk renderProducts();  // Sembunyikan Loading document.getElementById('loading-state').classList.add('hidden'); document.getElementById('product-grid').classList.remove('hidden'); }  function filterCategory(catName, btnElement) { currentFilter = catName;  // Update styling buttons document.querySelectorAll('.cat-btn').forEach(btn => { btn.classList.remove('bg-violet-600', 'text-white', 'border-transparent'); btn.classList.add('bg-white', 'text-gray-600', 'border-gray-200'); }); btnElement.classList.remove('bg-white', 'text-gray-600', 'border-gray-200'); btnElement.classList.add('bg-violet-600', 'text-white', 'border-transparent');  renderProducts(); }  function handleSearch(val) { currentSearch = val.toLowerCase(); // Sync both search inputs document.getElementById('searchInput').value = val; document.getElementById('searchInputMobile').value = val; renderProducts(); }  function renderProducts() { const grid = document.getElementById('product-grid'); const emptyState = document.getElementById('empty-state'); grid.innerHTML = '';  let filtered = appData.products.filter(p => { let matchCat = currentFilter === 'all' \vert{}\vert{} p.Kategori === currentFilter; let matchSearch = p.Nama_Produk.toLowerCase().includes(currentSearch) \vert{}\vert{} p.Kode_Produk.toLowerCase().includes(currentSearch); return matchCat && matchSearch; });  if (filtered.length === 0) { grid.classList.add('hidden'); emptyState.classList.remove('hidden'); emptyState.classList.add('flex'); return; }  grid.classList.remove('hidden'); emptyState.classList.add('hidden'); emptyState.classList.remove('flex');  filtered.forEach((p, pIndex) => { const card = document.createElement('div'); card.className = "bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-100 flex flex-col group";  // Buat HTML untuk slider const sliderId = `slider-${p.Kode_Produk}`;
+        let slidesHtml = p.images.map((img, i) => `
+          <div class="slider-slide" onclick="openDetail('${p.Kode_Produk}')">
+            <img src="${img.url}" loading="lazy" alt="${p.Nama_Produk} -${i+1}">
+          </div>
+        `).join('');
+
+        let navHtml = '';
+        if (p.images.length > 1) {
+          navHtml = `
+            <div class="slider-btn prev" onclick="moveSlider('${sliderId}', -1, event)"><i class="fas fa-chevron-left text-sm"></i></div>
+            <div class="slider-btn next"
