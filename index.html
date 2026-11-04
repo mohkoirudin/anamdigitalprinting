@@ -517,18 +517,20 @@
       }, 300);
     }
 
-    function openLightbox(startIndex) {
+function openLightbox(startIndex) {
       if (!activeProduct) return;
       
       const lb = document.getElementById('lightbox');
       const container = document.getElementById('lightbox-container');
       const lbSliderId = 'lb-slider';
 
-      // Gambar diatur full layar (bg-black) dan bisa di klik untuk perbesaran (zoom)
+      // PERBAIKAN: Menambahkan style="object-fit: contain !important; width: auto; height: auto; max-width: 100%; max-height: 100%;" 
+      // untuk mencegah gambar terpotong (override object-fit: cover dari CSS global)
       let slidesHtml = activeProduct.images.map((img) => `
         <div class="slider-slide flex items-center justify-center bg-black w-full h-full overflow-auto">
           <img src="${img.url}" 
-               class="max-w-full max-h-full object-contain transition-transform duration-300 cursor-zoom-in" 
+               class="transition-transform duration-300 cursor-zoom-in" 
+               style="object-fit: contain !important; width: auto !important; height: auto !important; max-width: 100%; max-height: 100%;"
                onclick="toggleZoomImage(this)"
                alt="Gambar Undangan">
         </div>
@@ -545,8 +547,10 @@
         `;
       }
 
+      // PERBAIKAN: Menambahkan style="aspect-ratio: auto !important; border-radius: 0;" pada kontainer 
+      // agar tidak terkunci dalam bentuk kotak (4/4) seperti di halaman awal
       container.innerHTML = `
-        <div class="slider-container h-full w-full bg-black" id="${lbSliderId}" data-current="${startIndex}" data-total="${activeProduct.images.length}">
+        <div class="slider-container h-full w-full bg-black" id="${lbSliderId}" data-current="${startIndex}" data-total="${activeProduct.images.length}" style="aspect-ratio: auto !important; border-radius: 0;">
           <div class="slider-wrapper" id="wrapper-${lbSliderId}" style="transform: translateX(-${startIndex * 100}%)">
             ${slidesHtml}
           </div>
