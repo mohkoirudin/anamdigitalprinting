@@ -16,7 +16,7 @@
     .slider-wrapper { display: flex; width: 100%; height: 100%; transition: transform 0.3s ease-out; cursor: grab; }
     .slider-wrapper:active { cursor: grabbing; }
     .slider-slide { flex: 0 0 100%; width: 100%; height: 100%; position: relative; user-select: none; }
-    .slider-slide img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+    .slider-slide img { width: 100%; height: 100%; object-fit: cover; }
     
     /* Navigasi Arrow & Dots */
     .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.7); color: #333; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; opacity: 0; transition: opacity 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
@@ -60,7 +60,6 @@
   <div class="max-w-6xl mx-auto px-4 mb-6">
     <div class="flex gap-2 overflow-x-auto py-2 hide-scrollbar" id="category-container">
       <button class="cat-btn active px-4 py-2 bg-violet-600 text-white rounded-full text-sm font-medium whitespace-nowrap transition-colors" data-cat="all">Semua Produk</button>
-      <!-- Kategori akan dirender di sini -->
     </div>
   </div>
 
@@ -77,7 +76,6 @@
     </div>
 
     <div id="product-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 hidden">
-      <!-- Produk akan dirender di sini -->
     </div>
   </main>
 
@@ -88,12 +86,8 @@
         <i class="fas fa-times"></i>
       </button>
 
-      <!-- Bagian Gallery Besar di Modal -->
-      <div class="w-full md:w-1/2 bg-gray-100 relative" id="modal-gallery-area">
-        <!-- Akan diisi oleh JS -->
-      </div>
+      <div class="w-full md:w-1/2 bg-gray-100 relative" id="modal-gallery-area"></div>
 
-      <!-- Bagian Info Produk -->
       <div class="w-full md:w-1/2 p-6 overflow-y-auto max-h-[50vh] md:max-h-full flex flex-col">
         <div class="text-xs font-semibold text-violet-600 mb-2 uppercase tracking-wide" id="modal-kategori">Kategori</div>
         <h2 class="text-2xl font-bold text-gray-800 mb-1" id="modal-title">Nama Produk</h2>
@@ -104,9 +98,7 @@
           <span class="text-sm text-gray-400 line-through hidden" id="modal-harga-coret">Rp0</span>
         </div>
 
-        <div class="prose prose-sm text-gray-600 mb-6 flex-grow" id="modal-desc">
-          Deskripsi produk...
-        </div>
+        <div class="prose prose-sm text-gray-600 mb-6 flex-grow" id="modal-desc"></div>
 
         <div class="grid grid-cols-2 gap-4 text-sm mb-8 bg-gray-50 p-4 rounded-xl border border-gray-100">
           <div><span class="text-gray-500 block text-xs">Min. Order</span><span class="font-medium" id="modal-min">100 pcs</span></div>
@@ -129,15 +121,14 @@
       </button>
     </div>
     
-    <div class="w-full h-full flex items-center justify-center relative" id="lightbox-container">
-      <!-- Image slider injected via JS -->
-    </div>
+    <div class="w-full h-full flex items-center justify-center relative" id="lightbox-container"></div>
   </div>
 
   <script>
-    // --- KONFIGURASI API BACKEND ---
-    // GANTI URL DI BAWAH INI DENGAN URL DEPLOYMENT APPS SCRIPT ANDA
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvckAsQeadIE_S466n_3ndyj7v_zThK0ij3uzRZkydbCWZ8AUtXYfK7a4--GzmmTP7/exec';
+    // ==========================================
+    // 1. MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
+    // ==========================================
+    const SCRIPT_URL = 'GANTI_DENGAN_URL_GAS_ANDA_YANG_BERAKHIRAN_EXEC';
 
     // --- STATE MANAGER ---
     let appData = { settings: {}, categories: [], products: [] };
@@ -145,24 +136,20 @@
     let currentSearch = '';
     let activeProduct = null;
 
-    // Format Rupiah
     const formatRp = (angka) => {
       return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka);
     };
 
     // --- INISIALISASI ---
     document.addEventListener("DOMContentLoaded", () => {
-      // Modifikasi: Tambahkan timestamp agar browser tidak menyimpan cache JSON yang gagal
       const noCacheUrl = SCRIPT_URL + '?action=getData&t=' + new Date().getTime();
       
       fetch(noCacheUrl, { 
         method: 'GET',
-        redirect: 'follow' // Memaksa browser mengikuti pengalihan dari Google
+        redirect: 'follow' 
       })
         .then(response => {
-          if (!response.ok) {
-            throw new Error('Server merespon dengan kode: ' + response.status);
-          }
+          if (!response.ok) throw new Error('Server merespon dengan kode: ' + response.status);
           return response.json();
         })
         .then(result => {
@@ -181,11 +168,9 @@
           `;
         });
 
-      // Setup Search Listeners
       document.getElementById('searchInput').addEventListener('input', (e) => handleSearch(e.target.value));
       document.getElementById('searchInputMobile').addEventListener('input', (e) => handleSearch(e.target.value));
       
-      // ESC key to close modals
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           if (!document.getElementById('lightbox').classList.contains('hidden')) closeLightbox();
@@ -194,7 +179,6 @@
       });
     });
 
-    // --- RENDER DATA AWAL ---
     function onDataLoaded(data) {
       appData = data;
       
@@ -268,7 +252,7 @@
         const sliderId = `slider-${p.Kode_Produk}`;
         let slidesHtml = p.images.map((img, i) => `
           <div class="slider-slide" onclick="openDetail('${p.Kode_Produk}')">
-            <img src="${img.url}" loading="lazy" alt="${p.Nama_Produk} - ${i+1}">
+            <img src="${img.url}" loading="lazy" alt="${p.Nama_Produk} - ${i+1}" style="pointer-events:none;">
           </div>
         `).join('');
 
@@ -340,7 +324,7 @@
       }
     }
 
-function initTouchSlider(sliderId) {
+    function initTouchSlider(sliderId) {
       const container = document.getElementById(sliderId);
       const wrapper = document.getElementById(`wrapper-${sliderId}`);
       const dots = document.getElementById(`dots-${sliderId}`)?.children;
@@ -361,10 +345,9 @@ function initTouchSlider(sliderId) {
       }
 
       const touchStart = (index) => (event) => {
-        // PERBAIKAN: Jangan geser slide jika layar dicubit dengan 2 jari (Pinch Zoom native)
+        // Jangan geser slide jika layar dicubit dengan 2 jari (Pinch Zoom)
         if (event.touches && event.touches.length > 1) return; 
-
-        // PERBAIKAN: Jangan geser slide jika gambar sedang di-zoom dengan klik
+        // Jangan geser slide jika gambar sedang di-zoom secara manual dengan klik
         if (event.target.classList && event.target.classList.contains('is-zoomed')) return;
 
         currentIndex = parseInt(container.getAttribute('data-current'));
@@ -380,7 +363,7 @@ function initTouchSlider(sliderId) {
       const touchMove = (event) => {
         if (!isDragging) return;
         
-        // Batalkan geser jika tiba-tiba menggunakan 2 jari
+        // Batalkan geseran jika tiba-tiba menggunakan 2 jari
         if (event.touches && event.touches.length > 1) {
             isDragging = false;
             return;
@@ -404,19 +387,6 @@ function initTouchSlider(sliderId) {
 
         updateSliderPos(sliderId, wrapper, currentIndex, dots);
       }
-
-      function getPositionX(event) {
-        return event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
-      }
-
-      wrapper.addEventListener('touchstart', touchStart(0), {passive: true});
-      wrapper.addEventListener('touchend', touchEnd);
-      wrapper.addEventListener('touchmove', touchMove, {passive: true});
-      wrapper.addEventListener('mousedown', touchStart(0));
-      wrapper.addEventListener('mouseup', touchEnd);
-      wrapper.addEventListener('mouseleave', () => { if(isDragging) touchEnd() });
-      wrapper.addEventListener('mousemove', touchMove);
-    }
 
       function getPositionX(event) {
         return event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
@@ -462,7 +432,7 @@ function initTouchSlider(sliderId) {
       
       let slidesHtml = p.images.map((img, i) => `
         <div class="slider-slide" onclick="openLightbox(${i})">
-          <img src="${img.url}" class="cursor-zoom-in" loading="lazy" alt="Foto ${i+1}">
+          <img src="${img.url}" class="cursor-zoom-in" loading="lazy" alt="Foto ${i+1}" style="pointer-events:none;">
         </div>
       `).join('');
 
@@ -547,15 +517,14 @@ function initTouchSlider(sliderId) {
       }, 300);
     }
 
-function openLightbox(startIndex) {
+    function openLightbox(startIndex) {
       if (!activeProduct) return;
       
       const lb = document.getElementById('lightbox');
       const container = document.getElementById('lightbox-container');
       const lbSliderId = 'lb-slider';
 
-      // PERBAIKAN: Menghapus p-4 (padding) agar gambar full layar,
-      // menghapus pointer-events-none, dan menambahkan onclick zoom
+      // Gambar diatur full layar (bg-black) dan bisa di klik untuk perbesaran (zoom)
       let slidesHtml = activeProduct.images.map((img) => `
         <div class="slider-slide flex items-center justify-center bg-black w-full h-full overflow-auto">
           <img src="${img.url}" 
@@ -597,7 +566,7 @@ function openLightbox(startIndex) {
       }
     }
 
-    // FUNGSI BARU: Logika perbesaran gambar saat disentuh/diklik
+    // Fungsi memperbesar (zoom) gambar saat diketuk
     function toggleZoomImage(img) {
       if (img.classList.contains('is-zoomed')) {
         img.classList.remove('is-zoomed');
@@ -605,7 +574,7 @@ function openLightbox(startIndex) {
         img.style.cursor = 'zoom-in';
       } else {
         img.classList.add('is-zoomed');
-        img.style.transform = 'scale(2.5)'; // Skala perbesaran 2.5x lipat
+        img.style.transform = 'scale(2.5)'; // Tingkat perbesaran
         img.style.cursor = 'zoom-out';
       }
     }
